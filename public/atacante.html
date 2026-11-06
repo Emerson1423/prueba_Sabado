@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sala de ataque</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1318;--panel:#161c24;--line:#27313e;--text:#d7dee7;--muted:#7f8c9b;--red:#ff5a5f;--red-soft:#3a1a1e;--amber:#f0b24a;--teal:#38d3ba;--teal-soft:#13302d;--blue:#6aa6ff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"IBM Plex Sans",system-ui,sans-serif;font-size:15px}
+.mono,code{font-family:"IBM Plex Mono",ui-monospace,monospace}
+button{font:inherit;cursor:pointer;color:var(--text);background:transparent;border:1px solid var(--line);border-radius:6px;padding:8px 14px}
+button:hover{border-color:var(--muted)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+button.go{background:var(--red);border-color:var(--red);color:#1a0608;font-weight:500}
+button.on{border-color:var(--blue);color:var(--blue)}
+input{font:inherit;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:9px 12px;width:100%}
+#gate{max-width:360px;margin:16vh auto 0;padding:0 20px}
+#gate h1{font-size:24px;font-weight:500;margin:0 0 6px}
+#gate p{color:var(--muted);margin:0 0 14px}
+#gate .err{color:var(--red);min-height:1.4em;margin:8px 0}
+.top{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--line)}
+.top h1{font-size:18px;font-weight:500;margin:0}
+.ctrl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.seg{display:flex;gap:0}
+.seg button{border-radius:0;margin-left:-1px}
+.seg button:first-child{border-radius:6px 0 0 6px;margin-left:0}
+.seg button:last-child{border-radius:0 6px 6px 0}
+.phases{display:flex;gap:8px;flex-wrap:wrap;padding:14px 20px 0}
+.ph{padding:6px 14px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.ph.past{color:var(--text);border-color:var(--muted)}
+.ph.now{color:#1a0608;background:var(--red);border-color:var(--red);font-weight:500}
+.stats{display:flex;gap:28px;flex-wrap:wrap;padding:16px 20px}
+.stat b{display:block;font-family:"IBM Plex Mono",monospace;font-size:28px;font-weight:500}
+.stat span{color:var(--muted);font-size:13px}
+.main{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:16px;padding:0 20px 24px}
+@media (max-width:860px){.main{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.panel h2{margin:0;padding:10px 14px;font-size:14px;font-weight:500;color:var(--muted);border-bottom:1px solid var(--line)}
+#term{height:380px;overflow:auto;padding:12px 14px;font-family:"IBM Plex Mono",monospace;font-size:13px}
+#term div{margin:0 0 5px}
+#term .warn{color:var(--amber)}
+#term .hit{color:var(--red)}
+#guess{padding:10px 14px;border-top:1px solid var(--line);font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--teal);min-height:40px;word-break:break-all}
+table{width:100%;border-collapse:collapse}
+td,th{padding:8px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top;font-weight:400}
+th{color:var(--muted);font-size:13px}
+td.h{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--muted)}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--line);margin-right:8px}
+.dot.on{background:var(--teal)}
+tr.cracked{background:var(--red-soft)}
+tr.resists{background:var(--teal-soft)}
+.res-c{color:var(--red);font-family:"IBM Plex Mono",monospace}
+.res-r{color:var(--teal)}
+.tag{margin-left:8px;font-size:12px;color:var(--muted)}
+.working{animation:blink 1s steps(2,start) infinite;color:var(--amber)}
+@keyframes blink{50%{opacity:.25}}
+#cards{display:none;padding:20px}
+#cards.show{display:block}
+.cg{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.cd{background:#fff;color:#14233b;border:1px dashed #8a97aa;border-radius:8px;padding:14px;font-size:14px}
+.cd b{font-size:16px}
+.cd .m{font-family:"IBM Plex Mono",monospace;font-size:15px;word-break:break-all}
+.cd small{color:#5b6b82}
+.noprint-tag{display:block;margin-top:6px;color:#8a5a00}
+@media print{
+  body{background:#fff}
+  body *{visibility:hidden}
+  #cards,#cards *{visibility:visible}
+  #cards{position:absolute;left:0;top:0;width:100%;padding:0}
+  .noprint,.noprint-tag{display:none!important}
+  .cd{break-inside:avoid}
+}
+@media (prefers-reduced-motion:reduce){.working{animation:none}}
+</style>
+</head>
+<body>
+
+<main id="gate">
+  <h1>Sala de ataque</h1>
+  <p>Solo para el instructor.</p>
+  <form id="gf"><input id="gk" type="password" placeholder="Clave de instructor" aria-label="Clave de instructor"><div class="err" id="ge" role="alert"></div><button class="go" type="submit">Entrar</button></form>
+</main>
+
+<div id="console" hidden>
+  <div class="top noprint">
+    <h1>Sala de ataque</h1>
+    <div class="ctrl">
+      <div class="seg" id="seg" role="group" aria-label="Método de guardado">
+        <button data-m="plain">SHA-256 sin sal</button>
+        <button data-m="salted">SHA-256 con sal</button>
+        <button data-m="slow">scrypt con sal</button>
+      </div>
+      <button class="go" id="go">Iniciar ataque</button>
+      <button id="rs">Reiniciar ronda</button>
+      <button id="ra">Restaurar cuentas</button>
+      <button id="cb">Tarjetas</button>
+    </div>
+  </div>
+
+  <section id="cards">
+    <div class="noprint" style="margin-bottom:14px"><button class="go" id="pr">Imprimir tarjetas</button> <span style="color:var(--muted)">La etiqueta de nivel no se imprime.</span></div>
+    <div class="cg" id="cg"></div>
+  </section>
+
+  <div id="live" class="noprint">
+    <div class="phases" id="phases"></div>
+    <div class="stats">
+      <div class="stat"><b id="s1">0 / 0</b><span>contraseñas descubiertas</span></div>
+      <div class="stat"><b id="s2">0</b><span>intentos</span></div>
+      <div class="stat"><b id="s3">0.0 s</b><span>tiempo de ataque</span></div>
+      <div class="stat"><b id="s4">0</b><span>docentes conectados</span></div>
+    </div>
+    <div class="main">
+      <section class="panel"><h2>Terminal</h2><div id="term"></div><div id="guess"></div></section>
+      <section class="panel"><h2>Base de datos de aula-segura</h2>
+        <table><thead><tr><th>Usuario</th><th>Hash</th><th>Resultado</th></tr></thead><tbody id="tb"></tbody></table>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+var $ = function (s) { return document.querySelector(s); };
+var key = '', ws = null, S = { users: [], phase: 'idle', mode: 'plain', stats: {} };
+var PH = [['intrusion', 'Intrusión'], ['dump', 'Volcado de datos'], ['crack', 'Descifrado'], ['done', 'Resultado']];
+var TIER = { debil: 'débil', media: 'media', fuerte: 'fuerte' };
+
+function el(tag, text, cls) { var e = document.createElement(tag); if (text != null) e.textContent = text; if (cls) e.className = cls; return e; }
+
+$('#gf').addEventListener('submit', function (ev) {
+  ev.preventDefault();
+  key = $('#gk').value;
+  if (!key) { $('#ge').textContent = 'Escribe la clave'; return; }
+  connect();
+});
+
+function connect() {
+  ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws?role=atacante&key=' + encodeURIComponent(key));
+  ws.onopen = function () { $('#gate').hidden = true; $('#console').hidden = false; };
+  ws.onclose = function (e) {
+    if (e.code === 4001) { $('#ge').textContent = 'Clave incorrecta'; $('#gate').hidden = false; $('#console').hidden = true; return; }
+    if (!$('#console').hidden) setTimeout(connect, 1500);
+  };
+  ws.onmessage = function (ev) {
+    var m = JSON.parse(ev.data);
+    if (m.t === 'roster') { S.users = m.users; S.phase = m.phase; S.mode = m.mode; S.stats = m.stats; render(); }
+    else if (m.t === 'log') addLog(m.line, m.cls);
+    else if (m.t === 'progress') {
+      $('#guess').textContent = 'probando: ' + m.guess;
+      $('#s2').textContent = m.tries.toLocaleString('es');
+      $('#s3').textContent = (m.ms / 1000).toFixed(1) + ' s';
+    }
+  };
+}
+
+function cmd(o) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(o)); }
+$('#go').addEventListener('click', function () { cmd({ t: 'start' }); });
+$('#rs').addEventListener('click', function () { $('#term').textContent = ''; $('#guess').textContent = ''; cmd({ t: 'reset' }); });
+var armed = null;
+$('#ra').addEventListener('click', function () {
+  var b = $('#ra');
+  if (!armed) { b.textContent = '¿Seguro? Pulsa otra vez'; armed = setTimeout(function () { armed = null; b.textContent = 'Restaurar cuentas'; }, 3000); return; }
+  clearTimeout(armed); armed = null; b.textContent = 'Restaurar cuentas';
+  $('#term').textContent = ''; $('#guess').textContent = ''; cmd({ t: 'resetAll' });
+});
+document.querySelectorAll('#seg button').forEach(function (b) {
+  b.addEventListener('click', function () { cmd({ t: 'setMode', mode: b.getAttribute('data-m') }); });
+});
+
+function addLog(line, cls) {
+  var t = $('#term'), d = el('div', '> ' + line, cls || '');
+  t.appendChild(d); t.scrollTop = t.scrollHeight;
+}
+
+function render() {
+  document.querySelectorAll('#seg button').forEach(function (b) { b.className = b.getAttribute('data-m') === S.mode ? 'on' : ''; });
+  var idx = PH.map(function (p) { return p[0]; }).indexOf(S.phase);
+  var ph = $('#phases'); ph.textContent = '';
+  PH.forEach(function (p, i) { ph.appendChild(el('span', p[1], 'ph' + (i === idx ? ' now' : (i < idx ? ' past' : '')))); });
+
+  var cracked = S.users.filter(function (u) { return u.status === 'cracked'; }).length;
+  $('#s1').textContent = cracked + ' / ' + S.users.length;
+  $('#s2').textContent = (S.stats.tries || 0).toLocaleString('es');
+  $('#s3').textContent = ((S.stats.ms || 0) / 1000).toFixed(1) + ' s';
+  $('#s4').textContent = S.users.filter(function (u) { return u.online; }).length;
+
+  var tb = $('#tb'); tb.textContent = '';
+  S.users.forEach(function (u) {
+    var tr = el('tr', null, u.status === 'cracked' ? 'cracked' : (u.status === 'resists' ? 'resists' : ''));
+    var c1 = el('td'); c1.appendChild(el('span', '', 'dot' + (u.online ? ' on' : ''))); c1.appendChild(document.createTextNode(u.id));
+    if (u.changed) c1.appendChild(el('span', 'cambió su clave', 'tag'));
+    var c2 = el('td', null, 'h');
+    c2.appendChild(document.createTextNode(u.hash ? u.hash.slice(0, 20) + '…' : '— sin acceso —'));
+    if (u.salt) { c2.appendChild(document.createElement('br')); c2.appendChild(document.createTextNode('sal ' + u.salt)); }
+    var c3 = el('td');
+    if (u.status === 'cracked') c3.appendChild(el('span', u.guess, 'res-c'));
+    else if (u.status === 'resists') c3.appendChild(el('span', 'resiste', 'res-r'));
+    else if (u.status === 'working') c3.appendChild(el('span', 'probando…', 'working'));
+    else c3.appendChild(el('span', '—'));
+    if (u.tier) c3.appendChild(el('span', TIER[u.tier], 'tag'));
+    tr.appendChild(c1); tr.appendChild(c2); tr.appendChild(c3); tb.appendChild(tr);
+  });
+}
+
+$('#cb').addEventListener('click', function () {
+  var c = $('#cards'), show = !c.classList.contains('show');
+  c.classList.toggle('show', show);
+  $('#live').style.display = show ? 'none' : '';
+  $('#cb').textContent = show ? 'Volver a la sala' : 'Tarjetas';
+  if (show) loadCards();
+});
+
+function loadCards() {
+  fetch('/api/cards?key=' + encodeURIComponent(key)).then(function (r) { return r.json(); }).then(function (list) {
+    var g = $('#cg'); g.textContent = '';
+    list.forEach(function (u) {
+      var d = el('div', null, 'cd');
+      d.appendChild(el('b', 'Aula segura'));
+      d.appendChild(document.createElement('br'));
+      d.appendChild(el('small', location.origin));
+      d.appendChild(document.createElement('br')); d.appendChild(document.createElement('br'));
+      d.appendChild(el('small', 'Usuario')); d.appendChild(document.createElement('br')); d.appendChild(el('span', u.id, 'm'));
+      d.appendChild(document.createElement('br')); d.appendChild(document.createElement('br'));
+      d.appendChild(el('small', 'Contraseña')); d.appendChild(document.createElement('br')); d.appendChild(el('span', u.pass, 'm'));
+      d.appendChild(el('small', 'Nivel: ' + TIER[u.tier], 'noprint-tag'));
+      g.appendChild(d);
+    });
+  });
+}
+$('#pr').addEventListener('click', function () { window.print(); });
+</script>
+</body>
+</html>

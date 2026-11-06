@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aula segura</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#14233b;--muted:#5b6b82;--bg:#f3f5f9;--card:#fff;--line:#dde3ec;--blue:#1f4fd8;--blue-soft:#e8eefc;--red:#b3202c;--green:#16794c;--green-soft:#e3f4ec;--amber:#8a5a00;--amber-soft:#fdf1d6}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Atkinson Hyperlegible",system-ui,sans-serif;font-size:17px;line-height:1.55}
+button{font:inherit;cursor:pointer;border-radius:8px;border:1px solid var(--blue);background:var(--blue);color:#fff;padding:10px 18px;font-weight:700}
+button.ghost{background:transparent;color:var(--blue)}
+button:focus-visible,input:focus-visible{outline:3px solid #9db6f5;outline-offset:2px}
+input{font:inherit;width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+label{display:block;font-weight:700;margin:14px 0 6px}
+.wrap{max-width:880px;margin:0 auto;padding:20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px}
+.err{color:var(--red);min-height:1.5em;margin:8px 0 0}
+.mono{font-family:ui-monospace,Consolas,monospace;font-size:14px;word-break:break-all}
+#login{max-width:400px;margin:12vh auto 0}
+#login h1{margin:0 0 4px;font-size:28px}
+#login p{margin:0 0 8px;color:var(--muted)}
+header.top{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 20px;background:#fff;border-bottom:1px solid var(--line)}
+header.top strong{font-size:20px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin-top:16px}
+.card h2{margin:0 0 10px;font-size:18px}
+.card ul{margin:0;padding-left:20px}
+.stat{font-size:34px;font-weight:700;line-height:1.1}
+.chip{display:inline-block;padding:2px 10px;border-radius:999px;font-size:14px;font-weight:700}
+.meter{height:8px;background:var(--line);border-radius:4px;overflow:hidden;margin:10px 0 6px}
+.meter div{height:8px;width:0;transition:width .2s}
+.ok{color:var(--green);font-weight:700;min-height:1.5em;margin:8px 0 0}
+#takeover{position:fixed;inset:0;z-index:10;display:none;background:#5e0f18;color:#fff;padding:24px;overflow:auto}
+#takeover.show{display:block}
+#takeover.calm{background:#12304f}
+.to-inner{max-width:640px;margin:6vh auto 0}
+.to-inner h2{font-size:clamp(28px,6vw,44px);line-height:1.1;margin:0 0 14px}
+.to-inner p{font-size:19px;margin:0 0 14px}
+.stolen{background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.25);border-radius:10px;padding:14px 16px;margin:18px 0}
+.stolen div{margin:4px 0}
+.stolen .k{opacity:.75;font-size:15px}
+.bar{height:6px;background:rgba(255,255,255,.2);border-radius:3px;overflow:hidden;margin:18px 0}
+.bar i{display:block;height:6px;width:30%;background:#fff;animation:slide 1.4s ease-in-out infinite}
+@keyframes slide{0%{margin-left:-30%}100%{margin-left:100%}}
+.verdict{font-size:clamp(26px,5vw,38px);font-weight:700;margin:6px 0 10px}
+.pw{display:inline-block;background:rgba(0,0,0,.3);padding:2px 10px;border-radius:6px;font-family:ui-monospace,Consolas,monospace}
+#takeover button{background:#fff;color:#5e0f18;border-color:#fff}
+@media (prefers-reduced-motion:reduce){.bar i{animation:none;width:100%}}
+</style>
+</head>
+<body>
+
+<main id="login" class="card">
+  <h1>Aula segura</h1>
+  <p>Entra con el usuario y la contraseña de tu tarjeta.</p>
+  <form id="lf">
+    <label for="lu">Usuario</label>
+    <input id="lu" autocomplete="username" autocapitalize="none" placeholder="docente01">
+    <label for="lp">Contraseña</label>
+    <input id="lp" type="password" autocomplete="current-password">
+    <p class="err" id="le" role="alert"></p>
+    <button type="submit">Entrar</button>
+  </form>
+</main>
+
+<div id="app" hidden>
+  <header class="top"><strong>Aula segura</strong><span><span id="who"></span> <button class="ghost" id="out">Salir</button></span></header>
+  <div class="wrap">
+    <div class="grid">
+      <section class="card"><h2>Mis cursos</h2><ul><li>Metodología de la investigación</li><li>Evaluación por competencias</li><li>Tecnología educativa</li></ul></section>
+      <section class="card"><h2>Entregas por calificar</h2><div class="stat">12</div><p style="margin:4px 0 0;color:var(--muted)">de 3 cursos</p></section>
+      <section class="card"><h2>Mensajes nuevos</h2><div class="stat">3</div><p style="margin:4px 0 0;color:var(--muted)">de coordinación académica</p></section>
+    </div>
+
+    <section class="card" style="margin-top:16px">
+      <h2>Así guarda la plataforma tu contraseña</h2>
+      <p style="margin:0 0 8px">Método actual: <strong id="modeName"></strong></p>
+      <div class="mono" id="myHash"></div>
+      <div class="mono" id="mySalt" style="margin-top:6px;color:var(--muted)"></div>
+      <p style="margin:10px 0 0;color:var(--muted)">La plataforma no guarda tu contraseña, guarda esta huella.</p>
+    </section>
+
+    <section class="card" style="margin-top:16px">
+      <h2>Cambiar mi contraseña</h2>
+      <label for="np" style="margin-top:0">Nueva contraseña (usa una inventada)</label>
+      <input id="np" type="text" autocomplete="off" placeholder="Prueba una frase de varias palabras">
+      <div class="meter"><div id="mb"></div></div>
+      <div><span class="chip" id="mc">Escribe algo</span> <span id="mt" style="color:var(--muted)"></span></div>
+      <p class="err" id="pe" role="alert"></p>
+      <button id="ps">Guardar contraseña</button>
+      <p class="ok" id="po"></p>
+    </section>
+  </div>
+</div>
+
+<div id="takeover" role="alertdialog" aria-live="assertive"><div class="to-inner" id="toi"></div></div>
+
+<script>
+var $ = function (s) { return document.querySelector(s); };
+var token = null, ws = null, me = null, mode = 'plain', phase = 'idle', result = null, dismissed = false;
+var MODES = { plain: 'SHA-256 sin sal', salted: 'SHA-256 con sal', slow: 'scrypt con sal (lento a propósito)' };
+var COMMON = ['123456','password','12345678','qwerty','abc123','maria2024','colegio01','admin','docente','111111','iloveyou','123456789','letmein','contraseña','universidad'];
+
+function classify(p) {
+  if (COMMON.indexOf(p.toLowerCase()) >= 0 || p.length < 8) return 'debil';
+  if (/^[A-Za-zñÑ]+[.#!_-]?\d{2,4}[!.]?$/.test(p) || p.length < 14) return 'media';
+  return 'fuerte';
+}
+
+function el(tag, text, cls) {
+  var e = document.createElement(tag);
+  if (text != null) e.textContent = text;
+  if (cls) e.className = cls;
+  return e;
+}
+
+$('#lf').addEventListener('submit', function (ev) {
+  ev.preventDefault();
+  var u = $('#lu').value.trim(), p = $('#lp').value;
+  if (!u || !p) { $('#le').textContent = 'Escribe tu usuario y tu contraseña'; return; }
+  $('#le').textContent = '';
+  fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user: u, pass: p }) })
+    .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+    .then(function (x) {
+      if (!x.ok) { $('#le').textContent = x.d.error || 'No se pudo entrar'; return; }
+      token = x.d.token; $('#who').textContent = x.d.id + ' ';
+      $('#login').hidden = true; $('#app').hidden = false;
+      connect();
+    })
+    .catch(function () { $('#le').textContent = 'No hay conexión con el servidor. Intenta de nuevo.'; });
+});
+
+$('#out').addEventListener('click', function () { location.reload(); });
+
+function connect() {
+  ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws?role=docente&token=' + token);
+  ws.onmessage = function (ev) {
+    var m = JSON.parse(ev.data);
+    if (m.t !== 'phase') return;
+    if (m.phase !== phase) dismissed = false;
+    phase = m.phase; mode = m.mode; me = m.me; result = m.result;
+    render();
+  };
+  ws.onclose = function () { if (token) setTimeout(function () { if (token) connect(); }, 1500); };
+}
+
+function render() {
+  $('#modeName').textContent = MODES[mode];
+  $('#myHash').textContent = me ? me.hash : '';
+  $('#mySalt').textContent = me && me.salt ? 'Sal de tu cuenta: ' + me.salt : '';
+  var t = $('#takeover'), box = $('#toi');
+  box.textContent = '';
+  if (phase === 'idle' || dismissed) { t.className = ''; return; }
+  t.className = 'show';
+
+  if (phase === 'intrusion') {
+    t.className = 'show calm';
+    box.appendChild(el('h2', 'Actividad sospechosa en la plataforma'));
+    box.appendChild(el('p', 'Alguien está intentando entrar a la base de datos. Espera un momento…'));
+    var b = el('div', '', 'bar'); b.appendChild(el('i')); box.appendChild(b);
+    return;
+  }
+  if (phase === 'dump') {
+    box.appendChild(el('h2', 'Se atacó la plataforma'));
+    box.appendChild(el('p', 'Se robó la información de la base de datos. Esto es lo que se llevaron de tu cuenta:'));
+    var s = el('div', '', 'stolen');
+    var d1 = el('div'); d1.appendChild(el('span', 'Usuario  ', 'k')); d1.appendChild(el('span', me.id, 'mono')); s.appendChild(d1);
+    var d2 = el('div'); d2.appendChild(el('span', 'Hash  ', 'k')); d2.appendChild(el('span', me.hash, 'mono')); s.appendChild(d2);
+    if (me.salt) { var d3 = el('div'); d3.appendChild(el('span', 'Sal  ', 'k')); d3.appendChild(el('span', me.salt, 'mono')); s.appendChild(d3); }
+    box.appendChild(s);
+    box.appendChild(el('p', 'Tu contraseña no salió en texto, pero el atacante ya tiene la huella.'));
+    return;
+  }
+  if (phase === 'crack') {
+    box.appendChild(el('h2', 'Intentando descubrir contraseñas'));
+    box.appendChild(el('p', 'Con los hashes robados, el atacante prueba combinaciones y compara las huellas. Mira qué pasa con la tuya…'));
+    var b2 = el('div', '', 'bar'); b2.appendChild(el('i')); box.appendChild(b2);
+    return;
+  }
+  if (phase === 'done' && result) {
+    if (result.cracked) {
+      box.appendChild(el('div', 'Tu contraseña fue descubierta', 'verdict'));
+      var p1 = el('p', 'Era '); p1.appendChild(el('span', result.guess, 'pw'));
+      p1.appendChild(document.createTextNode(result.ms < 1000 ? ' y cayó en menos de un segundo.' : ' y cayó en ' + (result.ms / 1000).toFixed(1) + ' segundos.'));
+      box.appendChild(p1);
+      box.appendChild(el('p', result.tier === 'debil'
+        ? 'Estaba entre las contraseñas más comunes, así que se probó en los primeros intentos.'
+        : 'Seguía un patrón predecible: nombre, símbolo y año. Los atacantes prueban esas combinaciones primero.'));
+    } else {
+      t.className = 'show calm';
+      box.appendChild(el('div', 'Tu contraseña resistió', 'verdict'));
+      box.appendChild(el('p', result.tier === 'fuerte'
+        ? 'Era larga y no seguía un patrón conocido, así que no apareció en la lista del atacante.'
+        : (mode === 'slow'
+          ? 'Resistió porque el método de guardado era lento. Con más tiempo, el atacante podría descubrirla.'
+          : 'No estaba en la lista de este atacante. Con una lista más grande, una clave corta o con patrón podría caer.')));
+    }
+    box.appendChild(el('p', 'Después de esta ronda podrás cambiar tu contraseña y probar otra vez.'));
+    var c = el('button', 'Continuar'); c.addEventListener('click', function () { dismissed = true; render(); });
+    box.appendChild(c);
+  }
+}
+
+var np = $('#np');
+np.addEventListener('input', function () {
+  var v = np.value, lv = classify(v), chip = $('#mc'), bar = $('#mb');
+  $('#po').textContent = ''; $('#pe').textContent = '';
+  if (!v) { chip.textContent = 'Escribe algo'; chip.style.background = '#eef0f4'; chip.style.color = '#5b6b82'; bar.style.width = '0'; $('#mt').textContent = ''; return; }
+  var map = {
+    debil: ['Débil', '#fde4e4', '#b3202c', '25%', 'Corta o muy común.'],
+    media: ['Media', '#fdf1d6', '#8a5a00', '60%', 'Predecible o corta. Prueba una frase más larga.'],
+    fuerte: ['Fuerte', '#e3f4ec', '#16794c', '100%', 'Larga y difícil de adivinar.']
+  }[lv];
+  chip.textContent = map[0]; chip.style.background = map[1]; chip.style.color = map[2];
+  bar.style.width = map[3]; bar.style.background = map[2]; $('#mt').textContent = map[4];
+});
+
+$('#ps').addEventListener('click', function () {
+  var v = np.value;
+  if (!v) { $('#pe').textContent = 'Escribe una contraseña nueva'; return; }
+  fetch('/api/password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: token, newPass: v }) })
+    .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+    .then(function (x) {
+      if (!x.ok) { $('#pe').textContent = x.d.error || 'No se pudo guardar'; return; }
+      $('#po').textContent = 'Contraseña actualizada'; np.value = ''; np.dispatchEvent(new Event('input')); $('#po').textContent = 'Contraseña actualizada';
+    });
+});
+</script>
+</body>
+</html>

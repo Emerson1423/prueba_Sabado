@@ -1,6 +1,6 @@
 'use strict';
 /*
-  Aula segura: simulación didáctica para una práctica con docentes.
+  Conecta (antes Aula segura): simulación didáctica para una práctica con docentes.
   Todo el estado vive en memoria (no hace falta base de datos).
   Las contraseñas son inventadas y el "ataque" corre sobre esta misma demo.
 */
@@ -11,9 +11,9 @@ const path = require('path');
 const { WebSocketServer } = require('ws');
 
 const PORT = process.env.PORT || 3000;
-const KEY = process.env.INSTRUCTOR_KEY || 'Emerson';
+const KEY = process.env.INSTRUCTOR_KEY || 'instructor';
 const SCRYPT_N = Number(process.env.SCRYPT_N) || 4096;
-const PACE_MS = 35;
+const PACE_MS = 15;
 const SLOW_BUDGET_MS = 20000;
 
 if (!process.env.INSTRUCTOR_KEY) {
@@ -24,7 +24,7 @@ const sha = (s) => crypto.createHash('sha256').update(s).digest('hex');
 const wait = (ms) => new Promise((r) => (ms > 0 ? setTimeout(r, ms) : setImmediate(r)));
 const send = (ws, o) => { if (ws.readyState === 1) ws.send(JSON.stringify(o)); };
 
-const COMMON = ['123456', 'password', '12345678', 'qwerty', 'abc123', 'maria2024', 'colegio01', 'admin', 'docente', '111111', 'iloveyou', '123456789', 'letmein', 'contraseña', 'universidad'];
+const COMMON = ['123456', 'password', '12345678', 'qwerty', 'abc123', '111111', '123456789', 'iloveyou', 'admin', 'letmein', 'contraseña', 'universidad', 'colegio01', 'docente', 'dios123', 'elsalvador', '123123', 'sansalvador', '1234567890', 'maria2024'];
 const COMMON_SET = new Set(COMMON);
 
 function classify(p) {
@@ -33,22 +33,30 @@ function classify(p) {
   return 'fuerte';
 }
 
-const PASS = {
-  debil: ['123456', 'maria2024', 'colegio01', 'qwerty', 'password'],
-  media: ['Maria.1985!', 'Colegio#2024', 'Docente.2020!', 'Escuela#1999', 'Ugb.2023!'],
-  fuerte: ['lago-cafe-nube-libro-7', 'tigre-azul-piano-mesa-42', 'rio-luna-cacao-verde-9', 'nube-roble-faro-tinta-3', 'cafe-motor-isla-pino-81'],
-};
-const TIERS = ['debil', 'media', 'fuerte'];
+// Personas inventadas (nombre, usuario) y contraseña inicial. Todas son débiles a propósito:
+// el atacante las descubre hasta que cada docente cambie la suya.
+const PEOPLE = [
+  ['Carlos Mejía', 'carlos.mejia', '123456'],
+  ['María López', 'maria.lopez', 'password'],
+  ['José Hernández', 'jose.hernandez', '12345678'],
+  ['Ana Martínez', 'ana.martinez', 'qwerty'],
+  ['Luis Rivera', 'luis.rivera', 'abc123'],
+  ['Carmen Flores', 'carmen.flores', '111111'],
+  ['Jorge Ramírez', 'jorge.ramirez', '123456789'],
+  ['Rosa Castillo', 'rosa.castillo', '123456'],
+  ['Miguel Alvarado', 'miguel.alvarado', 'iloveyou'],
+  ['Sofía Menjívar', 'sofia.menjivar', 'contraseña'],
+  ['Pedro Guzmán', 'pedro.guzman', 'colegio01'],
+  ['Lucía Cruz', 'lucia.cruz', 'docente'],
+  ['Roberto Henríquez', 'roberto.henriquez', 'dios123'],
+  ['Daniela Pineda', 'daniela.pineda', 'elsalvador'],
+  ['Fernando Orellana', 'fernando.orellana', 'universidad'],
+];
 
-const users = [];
-for (let i = 0; i < 15; i++) {
-  const pass = PASS[TIERS[i % 3]][Math.floor(i / 3)];
-  users.push({
-    id: 'docente' + String(i + 1).padStart(2, '0'),
-    orig: pass, pass, tier: classify(pass), changed: false,
-    salt: crypto.randomBytes(4).toString('hex'), hash: '', result: null,
-  });
-}
+const users = PEOPLE.map(([name, id, pass]) => ({
+  id, name, orig: pass, pass, tier: classify(pass), changed: false,
+  salt: crypto.randomBytes(4).toString('hex'), hash: '', result: null,
+}));
 
 let mode = 'plain'; // plain | salted | slow
 function hashPw(u, pw, m = mode) {
@@ -82,7 +90,7 @@ const online = (id) => (teacherSockets.get(id) || new Set()).size > 0;
 function teacherPayload(u) {
   return {
     t: 'phase', phase: attack.phase, mode, dumped: attack.dumped,
-    me: { id: u.id, hash: u.hash, salt: mode === 'plain' ? null : u.salt, changed: u.changed },
+    me: { id: u.id, name: u.name, hash: u.hash, salt: mode === 'plain' ? null : u.salt, changed: u.changed },
     result: u.result,
   };
 }
@@ -95,7 +103,7 @@ function rosterPayload() {
     t: 'roster', phase: attack.phase, mode,
     stats: { tries: attack.tries, ms: attack.ms, shaRate: BENCH.shaRate, scRate: BENCH.scRate },
     users: users.map((u) => ({
-      id: u.id, online: online(u.id), changed: u.changed,
+      id: u.id, name: u.name, online: online(u.id), changed: u.changed,
       hash: attack.dumped ? u.hash : null,
       salt: attack.dumped && mode !== 'plain' ? u.salt : null,
       status: u.result ? (u.result.cracked ? 'cracked' : 'resists') : (attack.phase === 'crack' ? 'working' : 'pending'),
@@ -111,7 +119,8 @@ function setPhase(p) { attack.phase = p; pushTeachers(); pushRoster(); }
 
 function candidates() {
   const out = COMMON.slice();
-  const bases = ['maria', 'colegio', 'docente', 'ugb', 'escuela', 'profesor', 'admin'];
+  const first = PEOPLE.map((p) => p[1].split('.')[0]);
+  const bases = first.concat(['colegio', 'docente', 'ugb', 'escuela', 'profesor', 'admin']);
   for (const b of bases) {
     for (const c of [b, b[0].toUpperCase() + b.slice(1)]) {
       for (let y = 1970; y <= 2026; y++) out.push(c + y, c + y + '!', c + '.' + y + '!', c + '#' + y, c + y + '.');
@@ -125,7 +134,7 @@ async function runAttack() {
   running = true; attack.cancel = false; attack.tries = 0; attack.ms = 0;
   try {
     setPhase('intrusion');
-    const intro = ['Escaneando aula-segura…', 'Puerto 443 abierto', 'Buscando acceso a la base de datos…', 'Acceso obtenido: la base de datos no tenía protección extra'];
+    const intro = ['Escaneando conecta…', 'Puerto 443 abierto', 'Buscando acceso a la base de datos…', 'Acceso obtenido: la base de datos no tenía protección extra'];
     for (const l of intro) { log(l); await wait(850); if (attack.cancel) return; }
 
     attack.dumped = true;
@@ -159,10 +168,11 @@ async function runAttack() {
           pushRoster();
         }
       }
-      if (slow || gi % 25 === 0) {
+      const fine = gi < 40; // las primeras pruebas van una por una para que se vea caer cada cuenta
+      if (slow || fine || gi % 25 === 0) {
         attack.ms = Date.now() - t0;
         pushAttackers({ t: 'progress', guess: g, tries: attack.tries, ms: attack.ms });
-        await wait(slow ? 0 : PACE_MS);
+        await wait(slow ? 0 : (fine ? 170 : PACE_MS));
         if (attack.cancel) return;
       }
     }
@@ -200,14 +210,15 @@ app.post('/api/login', (req, res) => {
   if (Date.now() - f.t > 60000) { f.n = 0; f.t = Date.now(); }
   if (f.n >= 20) return res.status(429).json({ error: 'Demasiados intentos. Espera un minuto.' });
   const { user, pass } = req.body || {};
-  const u = users.find((x) => x.id === String(user || '').trim().toLowerCase());
+  const norm = String(user || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const u = users.find((x) => x.id === norm);
   if (!u || typeof pass !== 'string' || hashPw(u, pass) !== u.hash) {
     f.n++; fails.set(ip, f);
     return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
   }
   const token = crypto.randomBytes(16).toString('hex');
   sessions.set(token, u.id);
-  res.json({ token, id: u.id });
+  res.json({ token, id: u.id, name: u.name });
 });
 
 app.post('/api/password', (req, res) => {
@@ -221,9 +232,11 @@ app.post('/api/password', (req, res) => {
   res.json({ ok: true });
 });
 
+app.get('/api/people', (req, res) => res.json(users.map((u) => ({ id: u.id, name: u.name }))));
+
 app.get('/api/cards', (req, res) => {
   if (req.query.key !== KEY) return res.status(401).json({ error: 'Clave de instructor incorrecta' });
-  res.json(users.map((u) => ({ id: u.id, pass: u.orig, tier: classify(u.orig) })));
+  res.json(users.map((u) => ({ id: u.id, name: u.name, pass: u.orig, tier: classify(u.orig) })));
 });
 
 const server = http.createServer(app);
@@ -269,4 +282,4 @@ setInterval(() => {
   });
 }, 25000);
 
-server.listen(PORT, () => console.log('Aula segura escuchando en el puerto ' + PORT));
+server.listen(PORT, () => console.log('Conecta escuchando en el puerto ' + PORT));

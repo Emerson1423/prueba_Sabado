@@ -116,7 +116,7 @@ tr.resists{background:var(--teal-soft)}
     </div>
     <div class="main">
       <section class="panel"><h2>Terminal</h2><div id="term"></div><div id="guess"></div></section>
-      <section class="panel"><h2>Base de datos de aula-segura</h2>
+      <section class="panel"><h2>Base de datos de Conecta</h2>
         <table><thead><tr><th>Usuario</th><th>Hash</th><th>Resultado</th></tr></thead><tbody id="tb"></tbody></table>
       </section>
     </div>
@@ -191,7 +191,7 @@ function render() {
   var tb = $('#tb'); tb.textContent = '';
   S.users.forEach(function (u) {
     var tr = el('tr', null, u.status === 'cracked' ? 'cracked' : (u.status === 'resists' ? 'resists' : ''));
-    var c1 = el('td'); c1.appendChild(el('span', '', 'dot' + (u.online ? ' on' : ''))); c1.appendChild(document.createTextNode(u.id));
+    var c1 = el('td'); c1.appendChild(el('span', '', 'dot' + (u.online ? ' on' : ''))); c1.appendChild(document.createTextNode(u.name || u.id)); c1.appendChild(el('span', u.id, 'tag'));
     if (u.changed) c1.appendChild(el('span', 'cambió su clave', 'tag'));
     var c2 = el('td', null, 'h');
     c2.appendChild(document.createTextNode(u.hash ? u.hash.slice(0, 20) + '…' : '— sin acceso —'));
@@ -219,7 +219,7 @@ function loadCards() {
     var g = $('#cg'); g.textContent = '';
     list.forEach(function (u) {
       var d = el('div', null, 'cd');
-      d.appendChild(el('b', 'Aula segura'));
+      d.appendChild(el('b', 'Conecta')); d.appendChild(document.createElement('br')); d.appendChild(el('span', u.name));
       d.appendChild(document.createElement('br'));
       d.appendChild(el('small', location.origin));
       d.appendChild(document.createElement('br')); d.appendChild(document.createElement('br'));
